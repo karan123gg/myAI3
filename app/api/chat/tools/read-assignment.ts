@@ -5,10 +5,10 @@ import { readDocument } from "@/lib/pinecone";
 export const readAssignment = tool({
     description: 'Read an assignment and return the content of the assignment',
     inputSchema: z.object({
-        hypothetical_document: z.string(),
+        query: z.string().describe('A hypothetical document in which similarity search would be performed upon'),
     }),
-    execute: async ({ hypothetical_document }) => {
-        return await readDocument('assignment', hypothetical_document);
+    execute: async ({ query }) => {
+        return await readDocument('assignment', query);
     },
 });
 

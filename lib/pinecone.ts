@@ -14,7 +14,7 @@ export const pineconeIndex = pinecone.Index('bit');
 
 export async function readDocument(
     filterType: FilterType,
-    hypothetical_document: string,
+    query: string,
     class_no?: number
 ): Promise<string> {
     const filter: Record<string, any> = {
@@ -26,7 +26,7 @@ export async function readDocument(
     const results = await pineconeIndex.namespace('default').searchRecords({
         query: {
             inputs: {
-                text: hypothetical_document,
+                text: query,
             },
             topK: 40,
             filter: filter,

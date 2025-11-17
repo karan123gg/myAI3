@@ -143,9 +143,6 @@ function formatToolArguments(toolName: string, input: unknown, toolDisplay?: Too
         if (args.query) {
             return String(args.query);
         }
-        if (args.hypothetical_document) {
-            return String(args.hypothetical_document).slice(0, 100);
-        }
         return "Arguments not available";
     } catch {
         return "Arguments not available";

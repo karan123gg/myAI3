@@ -5,9 +5,9 @@ import { readDocument } from "@/lib/pinecone";
 export const readNotebookLecture = tool({
     description: 'Read a lecture notebook and return the content of the lecture',
     inputSchema: z.object({
-        hypothetical_document: z.string(),
+        query: z.string().describe('A hypothetical document in which similarity search would be performed upon'),
     }),
-    execute: async ({ hypothetical_document }) => {
-        return await readDocument('lecture_notebook', hypothetical_document);
+    execute: async ({ query }) => {
+        return await readDocument('lecture_notebook', query);
     },
 });
