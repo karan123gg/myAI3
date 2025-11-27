@@ -4,6 +4,7 @@ export const MODEL = openai('gpt-4o-mini');
 
 export const AI_NAME = "GiftMatch";
 export const TAGLINE = "Match the perfect gift to the person you care about.";
+export const OWNER_NAME = "GiftMatch Team";
 
 export const CLEAR_CHAT_TEXT = "New";
 
