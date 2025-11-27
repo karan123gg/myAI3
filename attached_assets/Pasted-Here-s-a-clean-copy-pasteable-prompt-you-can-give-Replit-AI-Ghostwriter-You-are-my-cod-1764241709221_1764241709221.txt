@@ -1,0 +1,253 @@
+Here’s a clean, copy-pasteable prompt you can give Replit AI / Ghostwriter:
+
+---
+
+You are my coding assistant inside this existing myAI3 Replit project for the BITSoM “AI in Business: From Models to Agents” capstone.
+
+I need you to turn this into a polished, presentable AI product:
+
+* A named AI assistant
+* With a clean, professional web UI
+* That uses my gift CSV as a RAG knowledge base
+* And behaves like a real, user-ready product
+
+Please follow the spec below.
+
+---
+
+## 1. Identity: Name, Role, Tone
+
+Create an AI assistant called **“GiftSense AI”**.
+
+It should be:
+
+* Role: A personal **gifting concierge** that recommends thoughtful gifts based on personality, interests, relationship, occasion, and budget.
+* Target users: People in India who are unsure what to gift for birthdays, anniversaries, farewells, festivals, and other occasions.
+* Tone: Warm, professional, concise, and helpful. Not overly chatty, not salesy.
+* Behavior:
+
+  * Ask 2–4 short follow-up questions before recommending anything.
+  * Explain *why* each suggested gift is a good fit.
+  * Never invent specific brands or store links.
+
+The very first message from the assistant should look like:
+
+> Hi, I’m GiftSense AI, your personal gifting assistant. I help you find thoughtful gift ideas based on personality, interests, occasion, and budget.
+>
+> To get started, who are we shopping for?
+
+---
+
+## 2. Data / RAG: Use the Gift CSV as Knowledge Base
+
+There is a CSV file called `gift_recommendation_dataset_india.csv` with these columns:
+
+* `gift_name`
+* `category`
+* `personality`
+* `interest_tags`
+* `recipient_type`
+* `recipient_group`
+* `occasion`
+* `price_band`
+* `description`
+
+Do the following:
+
+1. On server startup, load and parse this CSV into an array `gifts`.
+
+   ```ts
+   type GiftRow = {
+     gift_name: string;
+     category: string;
+     personality: string;
+     interest_tags: string;
+     recipient_type: string;
+     recipient_group: string;
+     occasion: string;
+     price_band: string;
+     description: string;
+   };
+   ```
+
+2. Maintain a conversation-level context:
+
+   ```ts
+   type GiftContext = {
+     recipientType?: string;     // girlfriend, brother, coworker, etc.
+     recipientGroup?: string;    // partner, family member, friend, coworker, anyone
+     occasion?: string;          // birthday, anniversary, farewell, festival, etc.
+     priceBand?: string;         // Under ₹1,500; ₹1,500 – ₹4,000; ₹4,000 – ₹8,000; ₹8,000 – ₹15,000; Above ₹15,000
+     personality?: string;       // Introvert, Extrovert, Traveller / Adventurous, Tech-savvy, Fitness / Active, Foodie, Book-lover / Academic, Artistic / Creative, Sentimental / Emotional, Minimalist, Workaholic / Productivity-driven, Pet Lover
+     interests?: string[];       // e.g., reading, running, cricket, music, cooking
+   };
+   ```
+
+3. After each user message, try to extract and update any GiftContext fields (recipient, occasion, budget band, personality, interests) using simple pattern checks or the model.
+
+4. Implement a function:
+
+   ```ts
+   function filterGifts(ctx: GiftContext): GiftRow[]
+   ```
+
+   Filtering logic:
+
+   * Match `recipient_group` (and allow gifts marked `anyone`).
+   * If `recipientType` is present, use it as an additional match signal.
+   * Match `occasion` (if none match, allow “just because” or similar general occasions).
+   * Match `price_band` exactly if set.
+   * Match `personality` exactly if set.
+   * For `interests`, check if any interest keyword appears in `interest_tags`.
+
+   If fewer than 3 results:
+
+   * First relax interest matching.
+   * Then relax occasion (allow any occasion).
+   * Finally relax price band (allow neighbouring price bands).
+
+   Return up to 8–10 candidate gifts.
+
+5. The assistant must only recommend gifts that come from this CSV. No hallucinated items.
+
+---
+
+## 3. LLM / Model Behavior
+
+Use the existing OpenAI integration (via `OPENAI_API_KEY` secret).
+
+Create a function like:
+
+```ts
+async function generateGiftRecommendation(ctx: GiftContext, gifts: GiftRow[]): Promise<string>
+```
+
+This function should:
+
+1. Build a brief natural-language description of the user context, for example:
+
+   > Gift for my sister, introvert, loves books and quiet evenings, birthday, budget ₹1,500 – ₹4,000.
+
+2. Pass that context plus the list of `gifts` (as JSON) to the OpenAI chat completion.
+
+3. In the prompt, instruct the model to:
+
+   * Pick the **best 3–5 gifts** from the candidate list.
+   * For each gift:
+
+     * Use `gift_name` and `description`.
+     * Mention the `price_band`.
+     * Explain in 1–2 sentences *why* it fits the recipient’s personality, interests, and occasion.
+   * Keep the response structured and easy to scan (e.g., numbered list).
+   * If the match is not perfect, be honest and mention that it’s an approximate fit.
+   * Do not invent brands or store names; keep gifts generic.
+
+System prompt to use (or very close to this):
+
+> You are GiftSense AI, a gifting recommendation assistant for users in India. Your job is to suggest thoughtful, specific gift ideas using a structured gift database. You always try to collect the recipient type, relationship group, occasion, budget band, personality and interests with short follow-up questions before recommending. You must base your suggestions only on the gifts you are given from the database. Do not invent real brands, store links, or very specific products that are not in the database. Never recommend weapons, illegal items, or anything clearly inappropriate. Keep your tone warm, practical and concise.
+
+---
+
+## 4. Conversation Flow
+
+Implement this logic in the chat loop:
+
+1. On first message, send the intro text from GiftSense AI.
+
+2. After each user reply, update `GiftContext`.
+
+3. If any of these are missing, ask for them with short questions (one at a time):
+
+   * recipientType or recipientGroup
+   * occasion
+   * priceBand (budget band)
+   * personality and/or interests
+
+4. Only when there is enough context, call `filterGifts`, then `generateGiftRecommendation`, and show the final answer.
+
+If the user changes something later (e.g., “Actually my budget is higher”), update the context and rerun the process.
+
+---
+
+## 5. Safety
+
+Before returning the final answer to the user:
+
+* Run a simple keyword check over chosen `gift_name`, `category`, and `description` to ensure no clearly unsafe items (weapons, explicit content, etc.).
+* If the user asks for a harmful or offensive gift, ignore that request and instead suggest light-hearted but safe alternatives (e.g., a funny mug, small joke notebook).
+
+Do not display or log the API key anywhere.
+
+---
+
+## 6. Web UI / Frontend: Make It Presentable
+
+Please polish the existing web UI so that it looks like a simple, professional product demo.
+
+Requirements:
+
+1. **Layout:**
+
+   * A top header bar with:
+
+     * The name: “GiftSense AI”
+     * A short tagline: “Personality-based gift recommendations for any occasion.”
+   * Main area split vertically (on desktop):
+
+     * Left: Chat window
+     * Right: Info panel with “How to use this assistant”.
+
+2. **Chat Window:**
+
+   * Messages styled as chat bubbles; clear distinction between user and assistant.
+   * Light neutral background, rounded corners, subtle shadow for the chat area.
+   * Input box fixed at the bottom of the chat area with a clear “Send” button.
+   * Keep it responsive on mobile.
+
+3. **Info Panel:**
+
+   * Short explanation of what GiftSense AI does (2–3 sentences).
+   * A bulleted list, for example:
+
+     * “Tell me who you’re buying for (e.g., girlfriend, brother, coworker)”
+     * “Share their personality and interests (e.g., introvert who loves books)”
+     * “Set your budget range”
+     * “I’ll suggest 3–5 thoughtful gift ideas and explain why they fit.”
+   * A few example prompts like:
+
+     * “I need a birthday gift for my introvert sister who loves reading, under ₹3,000.”
+     * “Farewell gift for a fitness-loving coworker, ₹1,500–₹4,000.”
+     * “Anniversary gift for my foodie partner, mid-range budget.”
+
+4. **Styling:**
+
+   * Use a clean, modern design:
+
+     * Soft background (light grey / off-white).
+     * White cards for chat and info panel.
+     * Rounded corners and subtle shadows.
+   * Use a consistent accent color for buttons and header (e.g., a muted blue or teal).
+   * Make sure fonts are readable and spacing is not cramped.
+
+5. Show errors in a simple, user-friendly way (e.g., “Something went wrong, please try again”).
+
+---
+
+## 7. Integration
+
+Integrate all of the above into the existing myAI3 codebase:
+
+* Keep the tech stack already used in this template (frontend + backend).
+* Cleanly organise code so I can explain:
+
+  * where CSV is loaded
+  * where `GiftContext` lives
+  * where `filterGifts` is implemented
+  * where the OpenAI call happens
+  * where the system prompt is defined.
+
+Add brief comments in key places so I can talk about design decisions in my capstone report.
+
+---
+
+End of instructions.

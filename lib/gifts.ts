@@ -1,7 +1,6 @@
 import { GiftRow, GiftContext } from '@/types/gifts';
 import fs from 'fs';
 import path from 'path';
-import csv from 'csv-parse/sync';
 
 let cachedGifts: GiftRow[] | null = null;
 
@@ -11,13 +10,21 @@ export function loadGifts(): GiftRow[] {
   const filePath = path.join(process.cwd(), 'gift_recommendation_dataset_india.csv');
   const fileContent = fs.readFileSync(filePath, 'utf-8');
   
-  const records = csv.parse(fileContent, {
-    columns: true,
-    skip_empty_lines: true,
-    trim: true,
-  });
+  const lines = fileContent.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim());
+  
+  const records: GiftRow[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const values = lines[i].split(',').map(v => v.trim());
+    const record: any = {};
+    headers.forEach((header, idx) => {
+      record[header] = values[idx] || '';
+    });
+    records.push(record as GiftRow);
+  }
 
-  cachedGifts = records as GiftRow[];
+  cachedGifts = records;
   return cachedGifts;
 }
 
@@ -140,9 +147,8 @@ Format your response naturally as recommendations.`;
   const result = await generateText({
     model: MODEL,
     prompt: prompt,
-    system: `You are a gifting recommendation assistant for users in India. Your job is to suggest thoughtful, specific gift ideas based on the user's description of the recipient, occasion, budget, personality and interests. You have access to a structured database of gifts and should only recommend items that exist in the database. Do not invent real brand names or store links. Keep recommendations practical, warm, and focused on meaningful gifting.`,
+    system: `You are GiftSense AI, a gifting recommendation assistant for users in India. Your job is to suggest thoughtful, specific gift ideas using a structured gift database. You must base your suggestions only on the gifts you are given from the database. Do not invent real brands, store links, or very specific products. Keep recommendations practical, warm, and focused on meaningful gifting.`,
     temperature: 0.7,
-    maxTokens: 500,
   });
 
   return result.text;

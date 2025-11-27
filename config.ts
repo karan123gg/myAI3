@@ -2,10 +2,12 @@ import { openai } from "@ai-sdk/openai";
 
 export const MODEL = openai('gpt-4o-mini');
 
-export const AI_NAME = "Gift Assistant";
-export const OWNER_NAME = "GiftGenie";
+export const AI_NAME = "GiftSense AI";
+export const OWNER_NAME = "GiftSense";
 
-export const WELCOME_MESSAGE = `Hi! I can help you choose the perfect gift. Who are we shopping for?`
+export const WELCOME_MESSAGE = `Hi, I'm GiftSense AI, your personal gifting assistant. I help you find thoughtful gift ideas based on personality, interests, occasion, and budget.
+
+To get started, who are we shopping for?`
 
 export const CLEAR_CHAT_TEXT = "New";
 
