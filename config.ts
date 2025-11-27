@@ -4,65 +4,6 @@ export const MODEL = openai('gpt-4o-mini');
 
 export const AI_NAME = "GiftMatch";
 export const TAGLINE = "Match the perfect gift to the person you care about.";
-export const OWNER_NAME = "GiftMatch";
-
-// Price band mapping from CSV (Low/Medium/High) to display ranges
-export const PRICE_BAND_MAP: Record<string, string> = {
-  'Low': 'Under ₹1,500',
-  'Medium': '₹1,500 – ₹4,000',
-  'High': '₹4,000+',
-};
-
-export const PRICE_BANDS = [
-  'Under ₹1,500',
-  '₹1,500 – ₹4,000',
-  '₹4,000+',
-];
-
-// Map display ranges back to CSV values
-export const PRICE_BAND_REVERSE_MAP: Record<string, string> = {
-  'Under ₹1,500': 'Low',
-  '₹1,500 – ₹4,000': 'Medium',
-  '₹4,000+': 'High',
-};
-
-export const RECIPIENTS = {
-  'Partner': ['Girlfriend', 'Boyfriend', 'Wife', 'Husband'],
-  'Family member': ['Mother', 'Father', 'Sister', 'Brother', 'Parent', 'Cousin', 'Grandparent'],
-  'Friend': [],
-  'Coworker': [],
-  'Anyone': [],
-};
-
-export const OCCASIONS = ['Birthday', 'Anniversary', 'Farewell', 'Housewarming', 'Festival', 'Just because', 'Other'];
-
-export const PERSONALITIES = [
-  'Introvert',
-  'Extrovert',
-  'Traveller / Adventurous',
-  'Tech-savvy',
-  'Fitness / Active',
-  'Foodie',
-  'Book-lover / Academic',
-  'Artistic / Creative',
-  'Sentimental / Emotional',
-  'Minimalist',
-  'Workaholic / Productivity-driven',
-  'Pet Lover',
-];
-
-export const INTERESTS_OPTIONS = [
-  { label: 'Reading', value: 'reading' },
-  { label: 'Sports & Fitness', value: 'sports' },
-  { label: 'Travel & Outdoors', value: 'travel' },
-  { label: 'Tech & Gadgets', value: 'tech' },
-  { label: 'Art & Craft', value: 'art' },
-  { label: 'Food & Cooking', value: 'cooking' },
-  { label: 'Pets & Animals', value: 'pets' },
-  { label: 'Music & Entertainment', value: 'music' },
-  { label: 'Home Decor', value: 'home' },
-  { label: 'Work & Productivity', value: 'productivity' },
-];
 
 export const CLEAR_CHAT_TEXT = "New";
 
