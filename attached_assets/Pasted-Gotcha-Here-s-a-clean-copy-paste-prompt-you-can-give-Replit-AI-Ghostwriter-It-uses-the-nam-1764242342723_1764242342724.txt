@@ -1,0 +1,296 @@
+Gotcha. Here’s a **clean, copy-paste prompt** you can give Replit AI / Ghostwriter.
+It uses the name **GiftMatch** and makes the assistant **click-based (no typing for inputs)**.
+
+---
+
+**PROMPT FOR REPLIT AI (PASTE THIS IN REPLIT):**
+
+I’m building a capstone project chatbot in Replit using the myAI3 template and OpenAI.
+I want you to transform it into a **click-based gifting assistant** called **GiftMatch**.
+
+Users should NOT type their details (recipient, occasion, budget, personality).
+Instead, they should choose options by clicking buttons/chips, and then GiftMatch will show gift suggestions.
+
+Please update both the **frontend UI** and the **backend logic** to match the spec below.
+
+---
+
+### 1. Identity & First Message
+
+* Assistant name: **GiftMatch**
+* Tagline: **“Match the perfect gift to the person you care about.”**
+* Role: A personality-based gifting assistant for users in India.
+* Tone: Warm, clear, and concise. Not salesy.
+
+On first load, show in the main area:
+
+> Hi, I’m GiftMatch — I help you find thoughtful gift ideas based on who you’re gifting, the occasion, their personality, and your budget.
+> Start by selecting who you’re shopping for on the right.
+
+Do NOT ask the user to type anything at the start.
+
+---
+
+### 2. Layout (Two-Pane UI)
+
+Create a simple, responsive two-pane layout:
+
+* **Left pane:** Chat / results area (GiftMatch’s responses).
+* **Right pane:** A **control panel** with steps and clickable options to set all filters.
+
+Styling guidelines:
+
+* Light neutral background (off-white or light grey).
+* White “cards” with rounded corners and soft shadow for left and right sections.
+* Header bar at the top with:
+
+  * “GiftMatch” as title
+  * Small subtitle: “Personality-based gift finder for India”
+* Use a single accent color (blue/teal) for buttons, selected chips, and header.
+
+Make it work on mobile (stacked: header → selections → results).
+
+---
+
+### 3. Click-Based Input Flow (No Typing for Filters)
+
+On the **right panel**, show a guided step-by-step selection:
+
+#### Step 1: “Who are we shopping for?”
+
+Show recipient group as clickable buttons/chips:
+
+* Partner
+* Family member
+* Friend
+* Coworker
+* Anyone
+
+When user clicks, set `recipientGroup` accordingly.
+Optionally below, show common specific types (not mandatory but nice):
+
+* For “Family member”: Mother, Father, Sister, Brother, Cousin, Parent, Grandparent
+* For “Partner”: Girlfriend, Boyfriend, Wife, Husband
+
+On click, set both:
+
+* `recipientType` (e.g. "sister")
+* `recipientGroup` (e.g. "family member")
+
+#### Step 2: “What’s the occasion?”
+
+Buttons:
+
+* Birthday
+* Anniversary
+* Farewell
+* Housewarming
+* Festival
+* Just because
+* Other
+
+Map these to an `occasion` string. “Other” can map to a generic occasion like `"other"`.
+
+#### Step 3: “What’s your budget?”
+
+Buttons for price bands (must match CSV values):
+
+* **Under ₹1,500**
+* **₹1,500 – ₹4,000**
+* **₹4,000 – ₹8,000**
+* **₹8,000 – ₹15,000**
+* **Above ₹15,000**
+
+Clicking a button sets `priceBand` to that exact text.
+
+#### Step 4: “What’s their personality like?”
+
+Buttons/chips (single select):
+
+* Introvert
+* Extrovert
+* Traveller / Adventurous
+* Tech-savvy
+* Fitness / Active
+* Foodie
+* Book-lover / Academic
+* Artistic / Creative
+* Sentimental / Emotional
+* Minimalist
+* Workaholic / Productivity-driven
+* Pet Lover
+
+Click sets `personality`.
+
+#### Step 5: “What are they into?”
+
+Multi-select chips for interests:
+
+* Reading
+* Sports & Fitness
+* Travel & Outdoors
+* Tech & Gadgets
+* Art & Craft
+* Food & Cooking
+* Pets & Animals
+* Music & Entertainment
+* Home Decor
+* Work & Productivity
+
+Store these as `interests: string[]` mapped to simple lowercase tags like `"reading"`, `"sports"`, `"travel"`, `"tech"`, etc.
+
+At the bottom of the right panel, add a primary button:
+
+> **“Show gift matches”**
+
+When clicked:
+
+* Validate that `recipientGroup`, `occasion`, `priceBand`, and `personality` are all set.
+* If something is missing, show a small inline warning (e.g., “Please select a budget range”).
+* If all required fields are set, call the backend to fetch suggestions.
+
+Users should NOT have to type these details into the chat; the selections provide all needed context.
+
+---
+
+### 4. Data / RAG Layer (CSV)
+
+Use my existing CSV: `gift_recommendation_dataset_india.csv`
+Columns:
+
+* `gift_name`
+* `category`
+* `personality`
+* `interest_tags`
+* `recipient_type`
+* `recipient_group`
+* `occasion`
+* `price_band`
+* `description`
+
+On backend startup, load it into memory:
+
+```ts
+type GiftRow = {
+  gift_name: string;
+  category: string;
+  personality: string;
+  interest_tags: string;
+  recipient_type: string;
+  recipient_group: string;
+  occasion: string;
+  price_band: string;
+  description: string;
+};
+
+let gifts: GiftRow[] = [];
+```
+
+Define the context:
+
+```ts
+type GiftContext = {
+  recipientType?: string;
+  recipientGroup?: string;
+  occasion?: string;
+  priceBand?: string;
+  personality?: string;
+  interests?: string[];
+};
+```
+
+Implement:
+
+```ts
+function filterGifts(ctx: GiftContext): GiftRow[]
+```
+
+Filtering logic (roughly in this order):
+
+1. Filter by `recipient_group` (plus allow items with `recipient_group === "anyone"`).
+2. If `recipientType` exists, prefer gifts where `recipient_type` matches (but don’t hard fail if not).
+3. Filter by `occasion` (if zero results, relax to allow any occasion or generic ones like “just because”).
+4. Filter by `price_band` (exact match).
+5. Filter by `personality` (exact match).
+6. For `interests`, keep gifts where `interest_tags` contains at least one interest keyword.
+
+If fewer than 3 matches:
+
+* First ignore `interests`.
+* Then if still too few, ignore `occasion`.
+* Then relax `price_band` (allow neighbouring bands).
+
+Return a maximum of 8–10 candidate gifts.
+
+GiftMatch should only recommend gifts from this filtered list (no made-up items).
+
+---
+
+### 5. LLM Integration
+
+Create a function like:
+
+```ts
+async function generateGiftRecommendation(ctx: GiftContext, gifts: GiftRow[]): Promise<string>
+```
+
+What it should do:
+
+1. Build a short natural language description of the user context, e.g.:
+
+   “Gift for my sister (family member), birthday, budget ₹1,500 – ₹4,000, introvert, likes reading and home decor.”
+
+2. Provide the list of candidate gifts (`gifts`) as JSON (name, description, price_band, personality, etc.) in the prompt.
+
+3. Ask OpenAI to:
+
+   * Pick the **best 3–5 gifts** from that list.
+   * Respond as a numbered list:
+     `1. <gift_name> (price band: …) – <why it’s a good fit>`
+   * Clearly tie each gift back to personality, interests, relationship, and occasion.
+   * Keep the answer concise and friendly.
+   * Not invent brand names, store names, or URLs.
+
+Use this (or similar) **system prompt**:
+
+> You are GiftMatch, a gifting recommendation assistant for users in India. You recommend thoughtful gifts based only on items provided from a structured gift database. You always consider relationship, occasion, budget band, personality and interests when you explain your suggestions. Do not invent real brand names or store links. Never recommend weapons, illegal items, or anything clearly inappropriate. Keep answers warm, practical and concise, and format results as a numbered list of gift suggestions.
+
+---
+
+### 6. Chat / Results Area
+
+In the left pane:
+
+* Show GiftMatch’s messages as chat bubbles.
+* When the user clicks “Show gift matches”, display:
+
+  * A short context summary like:
+    “Shopping for: Sister · Occasion: Birthday · Budget: ₹1,500 – ₹4,000 · Personality: Introvert · Interests: Reading, Home Decor”
+  * Then the AI’s numbered list of recommended gifts.
+
+No need for a full free-text user input here, except maybe an optional small text box for follow-up questions (can be minimal).
+
+---
+
+### 7. Safety
+
+Before sending final suggestions to the frontend:
+
+* Sanity-check gifts for obviously unsafe categories (weapons, explicit content, etc.) — if any appear (even though they shouldn’t in this dataset), filter them out.
+* If a user ever types a harmful request in any free-text field, ignore it and respond with safe, light-hearted ideas instead.
+
+Keep using `OPENAI_API_KEY` from Replit Secrets and never expose it in logs or frontend.
+
+---
+
+Please:
+
+* Refactor or extend the existing myAI3 project to implement this spec.
+* Organize the code clearly (CSV loading, context, filtering, LLM call, UI components).
+* Add light comments so I can explain how it works in my report.
+
+End of instructions.
+
+---
+
+You can paste that whole thing into Replit’s AI, and it should understand exactly what to build/change.
