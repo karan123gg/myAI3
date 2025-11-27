@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MyAI3",
-  description: "MyAI3",
+  title: "GiftMatch - Find the Perfect Gift",
+  description: "Match the perfect gift to the person you care about. Personalized gift recommendations for any occasion.",
 };
 
 export default function RootLayout({
