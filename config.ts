@@ -1,30 +1,11 @@
 import { openai } from "@ai-sdk/openai";
-import { wrapLanguageModel, extractReasoningMiddleware } from "ai";
 
 export const MODEL = openai('gpt-4o-mini');
 
-function getDateAndTime(): string {
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-    const timeStr = now.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        timeZoneName: 'short'
-    });
-    return `The day today is ${dateStr} and the time right now is ${timeStr}.`;
-}
+export const AI_NAME = "Gift Assistant";
+export const OWNER_NAME = "GiftGenie";
 
-export const DATE_AND_TIME = getDateAndTime();
-
-export const AI_NAME = "Mr. Computer";
-export const OWNER_NAME = "Karan";
-
-export const WELCOME_MESSAGE = `Greetings! I'm ${AI_NAME}, an AI assistant created by ${OWNER_NAME}.`
+export const WELCOME_MESSAGE = `Hi! I can help you choose the perfect gift. Who are we shopping for?`
 
 export const CLEAR_CHAT_TEXT = "New";
 

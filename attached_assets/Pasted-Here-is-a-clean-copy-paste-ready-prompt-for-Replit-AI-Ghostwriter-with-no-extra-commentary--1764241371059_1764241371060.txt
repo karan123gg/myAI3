@@ -1,0 +1,163 @@
+Here is a **clean, copy-paste-ready prompt** for Replit AI (Ghostwriter) with no extra commentary:
+
+---
+
+**PROMPT TO PASTE IN REPLIT AI:**
+
+I am building a **gift recommendation chatbot for India** using LLM + a CSV dataset.
+Please update this project to match the following requirements.
+
+---
+
+### 🔹 Goal
+
+Transform the current chatbot into a **personal gifting assistant** that:
+
+* Asks the user targeted questions about the recipient
+* Filters a local CSV file to find the most relevant gifts
+* Uses the OpenAI model to explain the best suggestions clearly
+
+The priority is improving model + retrieval logic (not UI).
+
+---
+
+### 🔹 CSV / RAG Layer
+
+There is a CSV file named `gift_recommendation_dataset_india.csv` with columns:
+
+`gift_name, category, personality, interest_tags, recipient_type, recipient_group, occasion, price_band, description`
+
+Tasks:
+
+1. Load the CSV on server startup into an array `gifts: GiftRow[]`.
+
+2. Define:
+
+   ```ts
+   type GiftRow = {
+     gift_name: string;
+     category: string;
+     personality: string;
+     interest_tags: string;
+     recipient_type: string;
+     recipient_group: string;
+     occasion: string;
+     price_band: string;
+     description: string;
+   };
+   ```
+
+3. Define conversation state:
+
+   ```ts
+   type GiftContext = {
+     recipientType?: string;
+     recipientGroup?: string;
+     occasion?: string;
+     priceBand?: string;
+     personality?: string;
+     interests?: string[];
+   };
+   ```
+
+4. Create a function:
+
+   ```ts
+   function filterGifts(ctx: GiftContext): GiftRow[]
+   ```
+
+   Filtering rules:
+
+   * Match `recipient_group` (or allow “anyone”)
+   * If `recipientType` is present, prioritize
+   * Match `occasion`, or allow `"just because"` as fallback
+   * Match price band exactly if provided
+   * Match personality exactly if provided
+   * For interests: any token match in `interest_tags`
+
+   If fewer than 3 results:
+
+   * Relax interest matching
+   * Then relax occasion
+   * Finally relax price band
+
+Return max 8–10 candidates.
+
+---
+
+### 🔹 Conversation Flow
+
+Maintain a `GiftContext` throughout the conversation.
+
+Ask follow-up questions until these fields are collected:
+
+1. who the gift is for (recipient type or group)
+2. occasion
+3. budget → map to one of the 5 price bands
+4. personality and/or interests
+
+Only after that, call `filterGifts` and then the OpenAI model.
+
+---
+
+### 🔹 LLM Usage
+
+Create:
+
+```ts
+async function generateGiftRecommendation(ctx: GiftContext, gifts: GiftRow[]): Promise<string>
+```
+
+Prompt the model with:
+
+* Short natural language summary of context (recipient, occasion, price band, personality, interests)
+* JSON array of candidate gifts
+* Instructions to:
+
+  * select the **best 3–5 gifts**
+  * explain **why** each fits
+  * mention the **price band**
+  * keep tone warm and concise
+  * do not invent brands or store links
+
+---
+
+### 🔹 System Prompt (set this as system role)
+
+```
+You are a gifting recommendation assistant for users in India. Your job is to suggest thoughtful, specific gift ideas based on the user's description of the recipient, occasion, budget, personality and interests. Always ask short follow-up questions until you have enough information to search the gift database. You have access to a structured database of gifts and should only recommend items that exist in the database. Do not invent real brand names or store links. Never recommend weapons or inappropriate items. Keep replies friendly, practical and concise.
+```
+
+---
+
+### 🔹 Safety
+
+Add a small keyword filter before sending final suggestions:
+
+* If any result contains weapons / explicit / dangerous items → remove
+* If user requests prank/offensive gifts → substitute with light-hearted safe ideas
+
+---
+
+### 🔹 Final UX
+
+First bot message should be:
+
+```
+Hi! I can help you choose the perfect gift. Who are we shopping for?
+```
+
+After updating the code, ensure:
+
+* CSV is loaded once on startup
+* `GiftContext` fills across turns
+* `filterGifts` runs before calling OpenAI
+* OpenAI only generates explanation, not product discovery
+
+---
+
+**End of prompt.**
+
+---
+
+This is ready to paste directly into Replit’s AI.
